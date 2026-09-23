@@ -21,7 +21,7 @@
 ```
 
 ขั้นที่ 3 กับ 4 แยกกัน เรียกว่า **collection** กับ **execution**
-ถึงดูรายการได้โดยไม่ต้องรันจริงด้วย `pytest --collect-only`
+ถึงดูรายการได้โดยไม่ต้องรันจริงด้วย `python -m pytest --collect-only`
 
 **เปิดที่:** `pyproject.toml` → `[tool.pytest.ini_options]`
 
@@ -357,9 +357,9 @@ xfail(strict=True) ถ้าวันไหนมันผ่าน = เทส�
 ในไฟล์เทสต์:   pytestmark = pytest.mark.unit      <- ติดทั้งไฟล์
               @pytest.mark.slow                   <- ติดเฉพาะตัว
 
-ในบรรทัดคำสั่ง: pytest -m unit
-               pytest -m "not slow"
-               pytest -m "integration and not slow"    <- ใช้ and/or/not ได้
+ในบรรทัดคำสั่ง: python -m pytest -m unit
+               python -m pytest -m "not slow"
+               python -m pytest -m "integration and not slow"    <- ใช้ and/or/not ได้
 ```
 
 marker ที่สร้างเองต้องประกาศใน `pyproject.toml` ก่อน
@@ -426,7 +426,7 @@ unit         ไม่แตะไฟล์ ไม่แตะเน็ต ไ�
 integration  ใช้ไฟล์จริงบนดิสก์                      6 เทสต์
 ```
 
-ดูได้จากของจริง: `pytest -m unit` เทียบกับ `pytest -m integration`
+ดูได้จากของจริง: `python -m pytest -m unit` เทียบกับ `python -m pytest -m integration`
 
 ### 4. "ทำไมเทสต์ถึงไม่ยิง API จริง"
 

@@ -45,7 +45,7 @@ python -m chatlog.cli samples/sample_chat.txt
 python -m chatlog.cli samples/sample_chat.txt --json out/report.json
 ```
 
-> **บน Windows:** ถ้าเห็นชื่อเทสต์ภาษาไทยเป็นรหัส `อ...` ให้ตั้ง `PYTHONIOENCODING=utf-8`
+> **บน Windows:** ถ้าเห็นชื่อเทสต์ภาษาไทยเป็นรหัส `\u0e2d...` ให้ตั้ง `PYTHONIOENCODING=utf-8`
 > ก่อนรัน หรือสั่ง `chcp 65001` ในหน้าต่างนั้นก่อน
 
 ---
@@ -78,7 +78,7 @@ python3 -m pytest -v
 
 | ปัญหาที่อาจเจอ | ทางแก้ |
 |---|---|
-| ชื่อเทสต์เป็นรหัส `อ...` | ลืม `chcp 65001` กับ `set PYTHONIOENCODING=utf-8` |
+| ชื่อเทสต์เป็นรหัส `\u0e2d...` | ลืม `chcp 65001` กับ `set PYTHONIOENCODING=utf-8` |
 | `No module named pytest` | ยังไม่ได้ `pip install pytest pytest-cov` |
 | `No module named chatlog` | รันจากนอกโฟลเดอร์โปรเจค — ต้อง `cd` เข้าไปก่อน |
 | เครื่องไม่มีเน็ตให้ `pip install` | ใช้เครื่องตัวเอง หรือเตรียม `pip download` ใส่แฟลชไดรฟ์ไปก่อน |
@@ -190,20 +190,106 @@ tests/
 
 ---
 
-## คำสั่งที่ใช้บ่อย
+## คำสั่งทั้งหมด
+
+> ใช้ `python -m pytest` เสมอ **ไม่ใช่ `pytest` เฉย ๆ**
+> เพราะบนหลายเครื่อง โฟลเดอร์ `Scripts` ของ pip ไม่ได้อยู่ใน PATH แล้วจะขึ้นว่า `command not found`
+
+---
+
+### 🟢 โหมดที่ 1 — รันแบบยอม (ปกติ)
+
+ยกเว้นให้เทสต์ที่ติดป้าย `skip` และ `xfail` — **นี่คือโหมดที่ใช้ทำงานทุกวัน**
+
+```bash
+python -m pytest
+```
+
+```
+107 passed, 2 skipped, 1 xfailed
+```
 
 | คำสั่ง | ทำอะไร |
 |---|---|
-| `pytest` | รันทั้งหมด |
-| `pytest -v` | แสดงชื่อเทสต์ทีละตัว |
-| `pytest -m unit` | เฉพาะ unit test |
-| `pytest -m integration` | เฉพาะที่แตะไฟล์จริง |
-| `pytest -m "not slow"` | ข้ามตัวที่ช้า |
-| `pytest --cov` | รันพร้อมวัด coverage และเช็คเกณฑ์ขั้นต่ำ |
-| `pytest -k "is_late_night"` | เลือกด้วยชื่อ (ใช้คำอังกฤษ — บาง terminal ส่งภาษาไทยผ่าน `-k` ไม่ได้) |
-| `pytest -x` | เจอพังตัวแรกแล้วหยุด |
-| `pytest --lf` | รันเฉพาะตัวที่พังรอบที่แล้ว |
-| `pytest --collect-only` | ดูว่ามีเทสต์อะไรบ้างโดยไม่รัน |
+| `python -m pytest` | รันทั้งหมด |
+| `python -m pytest -v` | แสดงชื่อเทสต์ทีละตัว ← **ใช้ตอนนำเสนอ** |
+| `python -m pytest --cov` | รันพร้อมวัด coverage และเช็คเกณฑ์ขั้นต่ำ 85% |
+| `python -m pytest --collect-only -q` | ดูรายการเทสต์โดยไม่รัน (เห็นว่า `parametrize` แตกเป็นหลายกรณี) |
+
+---
+
+### 🔴 โหมดที่ 2 — รันแบบไม่ยอม (เข้มงวด)
+
+เลิกยกเว้นให้เทสต์ที่ **รู้อยู่แล้วว่าพัง** → กลายเป็น `FAILED` สีแดงเต็มรูปแบบ
+
+```bash
+python -m pytest --runxfail
+```
+
+```
+FAILED tests/unit/test_parser.py::test_ข้อความที่ถูกยกเลิก - AssertionError
+1 failed, 107 passed, 2 skipped
+```
+
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `python -m pytest --runxfail` | บังคับให้ `xfail` รายงานเป็น `FAILED` จริง |
+| `python -m pytest --runxfail -v` | แบบเดียวกันแต่เห็นทุกชื่อ |
+| `python -m pytest -x` | เจอพังตัวแรกแล้วหยุดทันที |
+| `python -m pytest --lf` | รันซ้ำเฉพาะตัวที่พังรอบที่แล้ว |
+| `python -m pytest tests/unit/test_rules.py --cov` | **เทสต์ผ่านหมดแต่ exit code = 1** เพราะ coverage เหลือ 25% |
+
+> แถวสุดท้ายคือกรณีที่ **ไม่มีเทสต์ไหนพังเลย แต่ยังถือว่าไม่ผ่าน**
+
+---
+
+### 💥 โหมดที่ 3 — ทำให้เกิด error ให้เห็น
+
+แก้โค้ดให้ผิดจริง 5 แบบ รัน pytest ให้ดูว่าแดงตัวไหน แล้ว **คืนสภาพไฟล์ให้เสมอ**
+
+```bash
+python scripts/demo_failures.py
+```
+
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `python scripts/demo_failures.py` | รันครบทั้ง 5 กรณี |
+| `python scripts/demo_failures.py --list` | ดูรายการกรณีก่อน |
+| `python scripts/demo_failures.py 2` | รันเฉพาะกรณีที่ 2 (กรณีที่แดง 5 เทสต์) |
+| `python scripts/demo_failures.py --full` | เอา traceback เต็ม ๆ |
+| `python scripts/demo_failures.py --restore` | ปุ่มฉุกเฉิน ดึงไฟล์กลับจาก git |
+| `git status` | ตรวจหลังสาธิตว่าไม่มีไฟล์ค้าง ต้องว่างเปล่า |
+
+---
+
+### เลือกเฉพาะบางกลุ่ม
+
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `python -m pytest -m unit` | เฉพาะ unit — 101 กรณี ไม่แตะไฟล์ ไม่แตะเน็ต |
+| `python -m pytest -m integration` | เฉพาะที่ใช้ไฟล์จริง — 9 กรณี |
+| `python -m pytest -m "not slow"` | ข้ามตัวที่ช้า |
+| `python -m pytest -m "integration and not slow"` | ผสมเงื่อนไขด้วย `and` / `or` / `not` |
+| `python -m pytest -k "is_late_night"` | เลือกด้วยชื่อ — **ใช้คำอังกฤษ** บาง terminal ส่งภาษาไทยผ่าน `-k` ไม่ได้ |
+| `python -m pytest tests/unit/test_rules.py` | เลือกทั้งไฟล์ |
+
+### รันตัวโปรแกรมจริง
+
+ต้อง `python -m pip install -e .` ก่อนหนึ่งครั้ง
+
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `python -m chatlog.cli samples/sample_chat.txt` | สรุปไฟล์ตัวอย่างออกจอ |
+| `python -m chatlog.cli samples/sample_chat.txt --json out/report.json` | เขียนรายงาน JSON |
+| `python -m chatlog.cli samples/sample_chat.txt --month` | เอาเฉพาะเดือนปัจจุบัน |
+
+### สรุปสามโหมดเทียบกัน
+
+| โหมด | คำสั่ง | ผลที่ได้ | ใช้ตอนไหน |
+|---|---|---|---|
+| 🟢 ยอม | `python -m pytest` | `107 passed` · exit 0 | ทำงานปกติ |
+| 🔴 ไม่ยอม | `python -m pytest --runxfail` | `1 failed, 107 passed` · exit 1 | โชว์ว่ามีงานค้างอยู่จริง |
+| 💥 โชว์ error | `python scripts/demo_failures.py` | แดง 5 รอบแล้วกลับมาเขียว | พิสูจน์ว่าเทสต์จับผิดได้ |
 
 ---
 
@@ -253,7 +339,7 @@ FAILED tests/unit/test_parser.py::test_ข้อความที่ถูก�
 | `stats.py` → ปิด `if not message.is_countable_text` | 3 | `test_นับคำเฉพาะข้อความจริง` 3 เคส |
 | `report.py` → `ensure_ascii` เป็น `True` | 1 | `test_ภาษาไทยไม่ถูกแปลงเป็นรหัส` |
 | `summarizer.py` → เปลี่ยนข้อความ error | 1 | `test_ไม่มีคีย์ต้องโยน_error` (จับได้เพราะใส่ `match=`) |
-| `pytest tests/unit/test_rules.py --cov` | **0** | ไม่มีเทสต์พังเลย แต่ **exit code = 1** |
+| `python -m pytest tests/unit/test_rules.py --cov` | **0** | ไม่มีเทสต์พังเลย แต่ **exit code = 1** |
 
 แถวสุดท้ายสำคัญที่สุด: **เทสต์ผ่านหมด 21 ตัว แต่ยังถือว่าไม่ผ่าน** เพราะ coverage เหลือ 25%
 

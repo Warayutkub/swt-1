@@ -176,7 +176,7 @@ FAILED tests/unit/test_summarizer.py::test_ไม่มีคีย์ต้อ�
 **ไม่ได้แก้โค้ดเลย** แค่รันเทสต์ไม่ครบชุด (เหมือนกรณีที่มีคนลบไฟล์เทสต์ทิ้ง)
 
 ```bash
-pytest tests/unit/test_rules.py --cov
+python -m pytest tests/unit/test_rules.py --cov
 ```
 
 ```
