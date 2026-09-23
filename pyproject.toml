@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chat-analyzer"
+version = "0.1.0"
+description = "แกะไฟล์ประวัติแชทเป็นสถิติและรายงาน - โปรเจคฝึกใช้ pytest"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5"]
+
+[project.scripts]
+chatlog = "chatlog.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ---------------------------------------------------------------------------
+# ฟีเจอร์ที่ 14: ตั้งค่า pytest จากไฟล์เดียว
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+# ทำให้ import chatlog ได้โดยไม่ต้อง pip install -e .
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+# -ra            สรุปท้ายรันว่าอะไรถูกข้าม/xfail บ้าง
+# --strict-markers  ใช้ marker ที่ไม่ได้ประกาศ = พัง (กันพิมพ์ผิด)
+# --strict-config   ตั้งค่าผิดในไฟล์นี้ = พัง
+addopts = "-ra --strict-markers --strict-config"
+
+# ไม่งั้น pytest จะแสดงชื่อเทสต์ภาษาไทยเป็นรหัส อ... อ่านไม่ออก
+disable_test_id_escaping_and_forfeit_all_rights_to_community_support = true
+
+# ฟีเจอร์ที่ 13: marker ที่สร้างเอง ต้องประกาศที่นี่
+markers = [
+    "unit: เทสต์ฟังก์ชันเดี่ยว ไม่แตะไฟล์ ไม่แตะเน็ต",
+    "integration: ต่อหลายชิ้นเข้าด้วยกัน แตะระบบไฟล์จริง",
+    "slow: ใช้เวลานาน ข้ามได้ตอนเขียนโค้ด",
+]
+
+[tool.coverage.run]
+source = ["chatlog"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+# ตัวเลขนี้คือ "ประตูคุณภาพ" - ต่ำกว่านี้ถือว่าสอบตก
+fail_under = 85
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
