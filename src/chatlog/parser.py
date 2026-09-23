@@ -68,7 +68,11 @@ def parse_text(text: str) -> list[Message]:
     current_date: date | None = None
 
     for line_no, raw in enumerate(text.splitlines(), start=1):
-        line = raw.rstrip()
+        # ตัดเฉพาะอักขระขึ้นบรรทัดใหม่ ห้ามตัดช่องว่างทิ้งตรงนี้
+        # ไม่งั้นข้อความที่มีแต่ช่องว่าง ("09:00<tab>ชื่อ<tab>   ") จะเหลือ
+        # "09:00<tab>ชื่อ" ซึ่งไม่ตรงรูปแบบ แล้วข้อความจะหายไปเงียบ ๆ
+        # ช่องว่างส่วนเกินถูกตัดทีหลังตอนประกอบเนื้อความแทน
+        line = raw.rstrip("\r\n")
 
         if not line.strip():
             continue

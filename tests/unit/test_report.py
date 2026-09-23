@@ -83,3 +83,20 @@ def test_เขียนลงโฟลเดอร์ที่ไม่มี�
     locked.chmod(0o500)
     with pytest.raises(PermissionError):
         write_report(stats, locked / "report.json")
+
+
+# ---------------------------------------------------------------------------
+# กรณีเขียนไฟล์ไม่สำเร็จ - เทสต์นี้รันได้ทุกระบบปฏิบัติการ
+# ---------------------------------------------------------------------------
+def test_เขียนลงพาธที่มีไฟล์ขวางอยู่(stats, tmp_path: Path) -> None:
+    """ถ้าชื่อโฟลเดอร์ที่ต้องสร้างดันเป็นไฟล์อยู่แล้ว ต้องโยน error ไม่ใช่เงียบ
+
+    ใช้ OSError เพราะแต่ละระบบปฏิบัติการโยนคนละลูก:
+    Windows -> FileExistsError | Linux/macOS -> NotADirectoryError
+    ทั้งคู่เป็นลูกของ OSError
+    """
+    blocker = tmp_path / "blocker"
+    blocker.write_text("ฉันเป็นไฟล์ ไม่ใช่โฟลเดอร์", encoding="utf-8")
+
+    with pytest.raises(OSError):
+        write_report(stats, blocker / "report.json")

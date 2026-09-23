@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import json
+import urllib.error
 
 import pytest
 
@@ -102,3 +103,48 @@ def test_call_ai_ส่งคีย์ไปในหัวข้อคำขอ
     assert captured["auth"] == "Bearer คีย์ปลอม"
     assert captured["body"]["prompt"] == "คำสั่งทดสอบ"
     assert captured["url"] == summarizer.API_URL
+
+
+# ---------------------------------------------------------------------------
+# กรณีที่ฝั่งเซิร์ฟเวอร์มีปัญหา
+#
+# สามข้อนี้คือสิ่งที่จะเกิดขึ้นจริงตอนใช้งาน และเป็นเหตุผลที่ต้อง mock
+# เพราะจำลองเน็ตล่มกับเซิร์ฟเวอร์ตอบมั่วด้วยของจริงไม่ได้
+# ---------------------------------------------------------------------------
+def test_เซิร์ฟเวอร์ตอบมาไม่มีคีย์ที่ต้องการ(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(summarizer.API_KEY_ENV, "คีย์ปลอม")
+    monkeypatch.setattr(
+        summarizer.urllib.request,
+        "urlopen",
+        lambda request, timeout=None: FakeResponse({"ข้อความ": "ผิดรูปแบบ"}),
+    )
+
+    with pytest.raises(KeyError):
+        summarizer.call_ai("คำสั่งทดสอบ")
+
+
+def test_เซิร์ฟเวอร์ตอบมาไม่ใช่_json(monkeypatch: pytest.MonkeyPatch) -> None:
+    class BrokenResponse(FakeResponse):
+        def read(self) -> bytes:
+            return b"<html>503 Service Unavailable</html>"
+
+    monkeypatch.setenv(summarizer.API_KEY_ENV, "คีย์ปลอม")
+    monkeypatch.setattr(
+        summarizer.urllib.request,
+        "urlopen",
+        lambda request, timeout=None: BrokenResponse({}),
+    )
+
+    with pytest.raises(json.JSONDecodeError):
+        summarizer.call_ai("คำสั่งทดสอบ")
+
+
+def test_เน็ตหลุดระหว่างเรียก(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_urlopen(request, timeout=None):
+        raise urllib.error.URLError("เชื่อมต่อไม่ได้")
+
+    monkeypatch.setenv(summarizer.API_KEY_ENV, "คีย์ปลอม")
+    monkeypatch.setattr(summarizer.urllib.request, "urlopen", fake_urlopen)
+
+    with pytest.raises(urllib.error.URLError):
+        summarizer.call_ai("คำสั่งทดสอบ")

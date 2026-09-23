@@ -85,3 +85,33 @@ def test_ไฟล์ขนาดใหญ่(project_dir: Path, big_chat_text: 
     assert stats.total_messages == 28 * 12
     assert stats.period_start.month == 8
     assert set(stats.by_sender) == {"มะลิ", "ฉัน"}
+
+
+# ---------------------------------------------------------------------------
+# กรณีไฟล์มีปัญหา - ต้องใช้ไฟล์จริงถึงจะเทสต์ได้
+# ---------------------------------------------------------------------------
+def test_ไฟล์ที่ไม่ใช่_utf8(project_dir: Path) -> None:
+    """ไฟล์เก่าจากมือถือรุ่นเก่าอาจเข้ารหัสเป็น TIS-620 ไม่ใช่ UTF-8
+
+    ต้องพังพร้อมบอกสาเหตุ ไม่ใช่อ่านมาได้เป็นตัวอักษรขยะ
+    """
+    legacy = project_dir / "input" / "tis620.txt"
+    legacy.write_bytes("2026/09/01\n09:00\tมะลิ\tสวัสดี".encode("tis-620"))
+
+    with pytest.raises(UnicodeDecodeError):
+        parse_file(legacy)
+
+
+def test_อ่านไฟล์ที่เข้ารหัสอื่นได้ถ้าระบุถูก(project_dir: Path) -> None:
+    """และต้องอ่านได้ถ้าบอกการเข้ารหัสที่ถูกต้องให้"""
+    legacy = project_dir / "input" / "tis620.txt"
+    legacy.write_bytes("2026/09/01\n09:00\tมะลิ\tสวัสดี".encode("tis-620"))
+
+    messages = parse_file(legacy, encoding="tis-620")
+
+    assert messages[0].text == "สวัสดี"
+
+
+def test_ส่งโฟลเดอร์มาแทนไฟล์(project_dir: Path) -> None:
+    with pytest.raises(OSError):
+        parse_file(project_dir / "input")

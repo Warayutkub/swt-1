@@ -60,3 +60,30 @@ def test_เดือนนี้ไม่มีข้อความ(tmp_path: 
 
     assert main([str(old), "--month"]) == 1
     assert "ไม่มีข้อความในเดือนนี้" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# กรณีเรียกใช้ผิดวิธี
+# ---------------------------------------------------------------------------
+def test_ไม่ใส่อาร์กิวเมนต์เลย(capsys) -> None:
+    """argparse จะจบโปรแกรมด้วย SystemExit(2) ไม่ได้ return ค่าออกมา
+
+    ต้องดักด้วย pytest.raises ไม่งั้นเทสต์จะถูกฆ่ากลางคัน
+    """
+    with pytest.raises(SystemExit) as exc_info:
+        main([])
+
+    assert exc_info.value.code == 2
+    assert "the following arguments are required" in capsys.readouterr().err
+
+
+def test_ไฟล์พังกลางคัน(tmp_path: Path, capsys) -> None:
+    """ไฟล์ที่มีข้อความปกติแล้วมีบรรทัดโครงสร้างพังอยู่ข้างใน"""
+    broken = tmp_path / "พัง.txt"
+    broken.write_text(
+        "2026/09/01 (อ)\n09:00\tมะลิ\tปกติ\n25:00\tฉัน\tเวลาผิด\n",
+        encoding="utf-8",
+    )
+
+    assert main([str(broken)]) == 1
+    assert "ผิดพลาด" in capsys.readouterr().out

@@ -1,5 +1,7 @@
 # chat-analyzer
 
+[![tests](https://github.com/Warayutkub/swt-1/actions/workflows/ci.yml/badge.svg)](https://github.com/Warayutkub/swt-1/actions/workflows/ci.yml)
+
 แกะไฟล์ประวัติแชทที่ส่งออกมาจากแอป (เริ่มที่ LINE) แล้วสรุปเป็นสถิติและรายงาน
 
 โปรเจคนี้เขียนขึ้นเพื่อ **ฝึกใช้ pytest ให้ครบทุกฟีเจอร์หลัก** ระบบจึงถูกออกแบบให้มีทั้ง
@@ -8,9 +10,18 @@
 
 | | |
 |---|---|
-| เทสต์ | **89 ผ่าน** · 2 ข้าม · 1 xfail |
+| กรณีทดสอบ | **110 กรณี** จาก 83 ฟังก์ชัน — 107 ผ่าน · 2 ข้าม · 1 คาดว่าไม่ผ่าน |
+| กรณีผิดพลาด | **34 กรณี** (41%) — มีครบทุกโมดูล |
 | Coverage | **100%** (เกณฑ์ขั้นต่ำ 85%) |
-| Python | 3.12 · pytest 9 |
+| Python | 3.11 · 3.12 · pytest 9 |
+
+### เอกสารประกอบ
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| [`docs/TEST-CASES.md`](docs/TEST-CASES.md) | **ตารางกรณีทดสอบทั้ง 110 กรณี** แยกประเภท ปกติ / ขอบเขต / ผิดพลาด |
+| [`docs/FAILURE-EVIDENCE.md`](docs/FAILURE-EVIDENCE.md) | **หลักฐานว่าเทสต์จับผิดได้จริง** — ทำให้พัง 6 แบบพร้อมผลรันจริง และบั๊กจริงที่เจอ |
+| [`docs/PRESENTATION.md`](docs/PRESENTATION.md) | อธิบายว่าฟังก์ชันของ pytest แต่ละตัวทำงานยังไงข้างใน |
 
 ---
 
@@ -36,6 +47,45 @@ python -m chatlog.cli samples/sample_chat.txt --json out/report.json
 
 > **บน Windows:** ถ้าเห็นชื่อเทสต์ภาษาไทยเป็นรหัส `อ...` ให้ตั้ง `PYTHONIOENCODING=utf-8`
 > ก่อนรัน หรือสั่ง `chcp 65001` ในหน้าต่างนั้นก่อน
+
+---
+
+## รันบนเครื่องอื่น (เช่น เครื่องในห้องเรียน)
+
+โคลนแล้วรันได้เลย **ไม่ต้องติดตั้งตัวโปรเจค** เพราะ `pyproject.toml` ตั้ง `pythonpath = ["src"]` ไว้
+
+### Windows (Command Prompt)
+
+```bat
+git clone https://github.com/Warayutkub/swt-1.git
+cd swt-1
+chcp 65001
+set PYTHONIOENCODING=utf-8
+python -m pip install pytest pytest-cov
+python -m pytest -v
+```
+
+### macOS / Linux
+
+```bash
+git clone https://github.com/Warayutkub/swt-1.git
+cd swt-1
+python3 -m pip install pytest pytest-cov
+python3 -m pytest -v
+```
+
+**ต้องได้:** `107 passed, 2 skipped, 1 xfailed`
+
+| ปัญหาที่อาจเจอ | ทางแก้ |
+|---|---|
+| ชื่อเทสต์เป็นรหัส `อ...` | ลืม `chcp 65001` กับ `set PYTHONIOENCODING=utf-8` |
+| `No module named pytest` | ยังไม่ได้ `pip install pytest pytest-cov` |
+| `No module named chatlog` | รันจากนอกโฟลเดอร์โปรเจค — ต้อง `cd` เข้าไปก่อน |
+| เครื่องไม่มีเน็ตให้ `pip install` | ใช้เครื่องตัวเอง หรือเตรียม `pip download` ใส่แฟลชไดรฟ์ไปก่อน |
+| เทสต์ `PermissionError` ข้ามไป | ปกติบน Windows — บน Linux เทสต์นั้นจะรันจริง (ดู TC-RP08) |
+
+> **บน macOS/Linux จะได้ `108 passed, 1 skipped`** เพราะเทสต์เรื่องสิทธิ์ไฟล์รันได้จริง
+> ตัวเลขต่างกันเป็นเรื่องปกติและอธิบายได้ — นี่คือสิ่งที่ `skipif` มีไว้ทำ
 
 ---
 
@@ -65,8 +115,8 @@ src/chatlog/
 
 tests/
   conftest.py            fixture ที่ทุกไฟล์ใช้ร่วมกัน
-  unit/                  83 เทสต์ - ไม่แตะไฟล์ ไม่แตะเน็ต
-  integration/           6 เทสต์ - ใช้ไฟล์จริง
+  unit/                  101 กรณี - ไม่แตะไฟล์ ไม่แตะเน็ต
+  integration/           9 กรณี - ใช้ไฟล์จริง
     conftest.py          fixture เฉพาะชั้นนี้ (conftest ซ้อนชั้น)
 ```
 
@@ -157,16 +207,21 @@ tests/
 
 เทสต์จะมีประโยชน์ก็ต่อเมื่อมันจับได้จริง ลองแก้ตามนี้แล้วดูว่าอะไรแดง
 
-| แก้ตรงไหน | เทสต์ที่ควรแดง |
-|---|---|
-| `rules.py` เปลี่ยน `NIGHT_END` เป็น `time(6, 0)` | `test_is_late_night` เคส 05:00 |
-| `rules.py` เปลี่ยน `REPLY_GAP_LIMIT` เป็น 24 ชั่วโมง | `test_ห่างเกินหกชั่วโมงไม่นับว่าตอบ` + ค่าเฉลี่ยใน `test_stats.py` |
-| `stats.py` เอา `if not message.is_countable_text` ออก | `test_รูปภาพไม่ถูกนับเป็นคำ` |
-| `report.py` เปลี่ยน `ensure_ascii` เป็น `True` | `test_ภาษาไทยไม่ถูกแปลงเป็นรหัส` |
-| `stats.py` ใช้ `datetime.now()` ตรง ๆ แทน `clock.today()` | `test_กรองเฉพาะเดือนนี้` (พังเมื่อเดือนเปลี่ยน) |
-| ลบเทสต์ใน `test_cli.py` ทิ้งสัก 3 ตัว | coverage ต่ำกว่า 85% → `pytest --cov` แดงทั้งที่ทุกเทสต์ผ่าน |
+เทสต์จะมีประโยชน์ก็ต่อเมื่อมันจับได้จริง ตารางนี้วัดมาแล้วทุกแถว
 
-แถวสุดท้ายสำคัญ: **เทสต์ผ่านหมดแต่ pipeline แดงได้** เพราะเกณฑ์ coverage ไม่ผ่าน
+| แก้ตรงไหน | แดงกี่ตัว | เทสต์ที่จับได้ |
+|---|---:|---|
+| `rules.py` → `NIGHT_END` เป็น `time(6, 0)` | 1 | `test_is_late_night[ตีห้าตรง-หมดช่วงดึก]` |
+| `rules.py` → `REPLY_GAP_LIMIT` เป็น 24 ชั่วโมง | **5** | ลามข้ามไปถึง `test_pipeline.py` และ `test_report.py` |
+| `stats.py` → ปิด `if not message.is_countable_text` | 3 | `test_นับคำเฉพาะข้อความจริง` 3 เคส |
+| `report.py` → `ensure_ascii` เป็น `True` | 1 | `test_ภาษาไทยไม่ถูกแปลงเป็นรหัส` |
+| `summarizer.py` → เปลี่ยนข้อความ error | 1 | `test_ไม่มีคีย์ต้องโยน_error` (จับได้เพราะใส่ `match=`) |
+| `pytest tests/unit/test_rules.py --cov` | **0** | ไม่มีเทสต์พังเลย แต่ **exit code = 1** |
+
+แถวสุดท้ายสำคัญที่สุด: **เทสต์ผ่านหมด 21 ตัว แต่ยังถือว่าไม่ผ่าน** เพราะ coverage เหลือ 25%
+
+> ผลรันจริงของทุกแถว รวมถึง **บั๊กจริงที่เจอตอนเขียนกรณีทดสอบเพิ่ม** อยู่ใน
+> [`docs/FAILURE-EVIDENCE.md`](docs/FAILURE-EVIDENCE.md)
 
 ---
 

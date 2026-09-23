@@ -117,3 +117,28 @@ def test_กรองเฉพาะเดือนนี้(frozen_clock) -> No
 def test_เดือนนี้ไม่มีข้อความเลย(frozen_clock) -> None:
     messages = [Message(datetime(2025, 1, 1, 9, 0), "มะลิ", "ปีที่แล้ว", Kind.TEXT)]
     assert filter_current_month(messages) == []
+
+
+# ---------------------------------------------------------------------------
+# กรณีข้อมูลผิดปกติ
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "top_n",
+    [
+        pytest.param(0, id="ขอศูนย์คำ"),
+        pytest.param(-1, id="ขอจำนวนติดลบ"),
+    ],
+)
+def test_ขอจำนวนคำผิดปกติต้องไม่พัง(sample_messages, top_n: int) -> None:
+    """ต้องรู้ว่ามันคืนอะไร ไม่ใช่เดาเอา"""
+    assert count_words(sample_messages, top_n=top_n) == []
+
+
+def test_ข้อความที่มีแต่ช่องว่างไม่ถูกนับเป็นคำ() -> None:
+    messages = [Message(datetime(2026, 9, 1, 9, 0), "มะลิ", "   ", Kind.TEXT)]
+    assert count_words(messages) == []
+
+
+def test_เครื่องหมายวรรคตอนล้วนไม่ถูกนับเป็นคำ() -> None:
+    messages = [Message(datetime(2026, 9, 1, 9, 0), "มะลิ", "!!! ??? ...", Kind.TEXT)]
+    assert count_words(messages) == []
